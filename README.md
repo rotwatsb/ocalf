@@ -1,5 +1,6 @@
 # ocalf
-OCaml "inspired" interpreter written in Rust. Supports type inference and matchable destructuring.
+
+Kind-of-OCaml-like interpreter written in Rust. Supports type inference and matchable destructuring. Heavy inspiration was taken from http://www.cs.cornell.edu/courses/cs3110/2015fa/a4/a4.html.
 
 "cargo run" to build and start the REPL. The parser uses lalrpop, so it might take some time.
 
@@ -34,4 +35,4 @@ let l1 = Cons(1, Cons(2, Nil ())) in
 let fn = fun x -> (x + 1) in 
 map fn l1"
 
-Debug info and error statements are admittedly wanting. I am sorry.
+Debug info and error statements are admittedly wanting. I am so sorry.
