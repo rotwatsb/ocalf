@@ -25,7 +25,7 @@ sum_n 20"
 
 A period following a let binding tells the repl to create the binding in the environment, but not to evaluate anything.
 
-Alternatively, you can evaluate bindings immediately by dropping the period and add attaching an "in" clause:
+Alternatively, you can evaluate bindings immediately by dropping the period and attaching an "in" clause:
 
 "let map = fun f -> fun l -> 
      match l with 
