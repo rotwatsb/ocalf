@@ -1,0 +1,30 @@
+(**
+ * When running ocaml or utop, this file is automatically #used.
+ * Feel free to extend it if you find yourself typing the same thing over and
+ * over!
+ *)
+
+(** This stuff is generally useful, it is copied from ~/.ocamlinit *)
+#use "topfind";;
+#require "pa_ounit";;
+#require "qcheck";;
+#load "assertions.cma";;
+
+(** This loads the compiled modules from this directory *)
+#directory "_build";;
+#load "ast.d.cmo";;
+#load "typedAst.d.cmo";;
+#load "parser.d.cmo";;
+#load "lexer.d.cmo";;
+#load "parse.d.cmo";;
+#load "printer.d.cmo";;
+#load "eval.d.cmo";;
+#load "infer.d.cmo";;
+
+(** For convenience, we open a bunch of modules *)
+open Ast
+open TypedAst
+open Printer
+open Infer
+open Eval
+open Parse

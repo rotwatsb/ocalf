@@ -1,0 +1,23 @@
+
+e ::=  (* expressions *)
+    | () | i | b | s | x
+    | e1 bop e2
+    | if e1 then e2 else e3
+    | let [rec] x = e1 in e2
+    | e1 e2
+    | fun x -> e
+    | (e1,e2)
+    | C e
+    | match e with p1 -> e1 | ... | pn -> en
+
+bop ::=  (* binary operators *)
+    | + | - | * | > | < | = | >= | <= | <> | ^
+
+p ::=  (* patterns *)
+    | () | i | b | s | x | C p | (p1,p2)
+
+i ::= integers
+b ::= booleans
+s ::= strings
+x ::= variable identifiers
+C ::= constructor identifiers

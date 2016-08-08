@@ -1,0 +1,173 @@
+use std::str::FromStr;
+use ast::{Expr, Opcode};
+use antast::{VariantSpec, Typ};
+
+grammar;
+
+pub VariantSpec: VariantSpec = {
+    "type" <al:AlphaTypList> <i:Idfier> "=" <cl:ConstructorList> =>
+        VariantSpec { vars: al, name: i, constructors: cl },
+};
+
+AlphaTypList: Vec<Typ> = {
+    <a:AlphaTyp> <al:AlphaTypList>
+        =>  { let mut v = vec![a];
+              v.extend(al.iter().cloned());
+              v },
+    <a:AlphaTyp> => vec![a],
+};
+
+ConstructorList: Vec<(String, Typ)> = {
+    <cd:ConDef> "|" <cl:ConstructorList>
+        => { let mut v = vec![cd];
+             v.extend(cl.iter().cloned());
+             v },
+    <cd:ConDef> => vec![cd],
+};
+
+ConDef: (String, Typ) = {
+    <c:Constructor> "of" <t:Typ> => (c, t),
+};
+
+pub Typ: Typ = {
+    <t1:Typ> "->" <t2:TypElem> => Typ::TArrow(Box::new(t1), Box::new(t2)),
+    <t1:Typ> "*" <t2:TypElem> => Typ::TStar(Box::new(t1), Box::new(t2)),
+    TypElem,
+};
+
+TypElem: Typ = {
+    <tl:TypAtmList> <i:Idfier> => Typ::TVnt(tl, i),
+    TypAtm,
+};
+
+TypAtm: Typ = {
+    "unit" => Typ::TUnit,
+    "int" => Typ::TInt,
+    "bool" => Typ::TBool,
+    "string" => Typ::TStr,
+    AlphaTyp,
+    "(" <Typ> ")",
+};
+
+TypAtmList: Vec<Typ> = {
+    <t:TypAtm> <tl:TypAtmList>
+        =>  { let mut v = vec![t];
+              v.extend(tl.iter().cloned());
+              v },
+    <t:TypAtm>
+        => vec![t],
+};
+
+AlphaTyp: Typ = {
+    <Alpha> => Typ::TAlpha(<>),
+};
+
+Alpha: char = {
+    r"\x27[a-z]" => String::from_str(<>).unwrap().chars().nth(1).unwrap(),
+};
+
+pub Expr: Box<Expr> = {
+    OpExpr,
+    "fun" <Idfier> "->" <Expr> => Box::new(Expr::Fun(<>)),
+    "let" "rec" <i:Idfier> "=" <e1:Expr> "in" <e2:Expr> =>
+        Box::new(Expr::Let(true, i, e1, e2)),
+    "let" <i:Idfier> "=" <e1:Expr> "in" <e2:Expr> =>
+        Box::new(Expr::Let(false, i, e1, e2)),
+    "match" <OpExpr> "with" <MatchList> =>
+        Box::new(Expr::Match(<>)),
+    "if" <OpExpr> "then" <OpExpr> "else" <OpExpr> =>
+        Box::new(Expr::If(<>)),
+};
+
+OpExpr: Box<Expr> = {
+    <OpExpr> <BoolOp> <Poly> => Box::new(Expr::Op(<>)),
+    Poly,
+};
+
+Poly: Box<Expr> = {
+    <Poly> <ArithOp> <Factor> => Box::new(Expr::Op(<>)),
+    Factor,
+};
+
+Factor: Box<Expr> = {
+    <Factor> <FactorOp> <Term> => Box::new(Expr::Op(<>)),
+    <Factor> <Term> => Box::new(Expr::App(<>)),
+    Term,
+};
+
+Term: Box<Expr> = {
+    Destructurable,
+    "(" <Expr> ")",
+};
+
+Destructurable: Box<Expr> = {
+    <Constructor> <Term> => Box::new(Expr::Vnt(<>)),
+    "()" => Box::new(Expr::Unit),
+    Int => Box::new(Expr::Int(<>)),
+    Bool => Box::new(Expr::Bool(<>)),
+    Str => Box::new(Expr::Str(<>)),
+    Idfier => Box::new(Expr::Var(<>)),
+    "(" <Expr> "," <Expr> ")" => Box::new(Expr::Tup(<>)),
+};
+
+Pattern: Box<Expr> = {
+    <Constructor> <Pattern> => Box::new(Expr::PVnt(<>)),
+    "()" => Box::new(Expr::PUnit),
+    Int => Box::new(Expr::PInt(<>)),
+    Bool => Box::new(Expr::PBool(<>)),
+    Str => Box::new(Expr::PStr(<>)),
+    Idfier => Box::new(Expr::PVar(<>)),
+    "(" <Pattern> "," <Pattern> ")" => Box::new(Expr::PTup(<>)),
+};
+
+MatchList: Vec<(Box<Expr>, Box<Expr>)> = {
+    <p:Matcher> <l:MatchList>
+        => { let mut v = vec![p];
+             v.extend(l.iter().cloned());
+             v },
+    <p:Matcher>
+        => vec![p],
+};
+
+Matcher: (Box<Expr>, Box<Expr>) = {
+    "|" <p:Pattern> "->" <e:OpExpr> => (p, e),
+};
+
+BoolOp: Opcode = {
+    "<" => Opcode::Less,
+    ">" => Opcode::Greater,
+    "==" => Opcode::Equal,
+};
+
+ArithOp: Opcode = { 
+    "+" => Opcode::Add,
+    "-" => Opcode::Sub,
+};
+
+FactorOp: Opcode = {
+    "*" => Opcode::Mul,
+    "/" => Opcode::Div,
+};
+
+Constructor: String = {
+    r"([A-Z]+[a-zA-Z0-9_]*)" => String::from_str(<>).unwrap(),
+};
+
+Int: i32 = {
+    r"[0-9]+" => i32::from_str(<>).unwrap(),
+};
+
+Bool: bool = {
+    "true" => bool::from_str(<>).unwrap(),
+    "false" => bool::from_str(<>).unwrap(),
+};
+
+Str: String = {
+    r#""[a-zA-Z0-9_ ]+""# => String::from_str(<>).unwrap()
+        .trim_matches('\x22').to_string(),
+};
+
+Idfier: String = {
+    r"([a-z_]+[a-zA-Z0-9_]*)" => String::from_str(<>).unwrap(),
+};
+
