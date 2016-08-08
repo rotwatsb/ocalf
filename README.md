@@ -11,6 +11,15 @@ Define variants like "type 'a list = Nil of unit | Cons of ('a * 'a list)" or "t
 
 Some example expresisons:
 
+"let make_list = fun n -> 
+     if n > 0 then Cons(n, make_list (n - 1)) 
+     	      else Nil () in 
+make_list 10"
+
+"let sum_n = fun n -> 
+     if n > 0 then n + sum_n (n - 1) else 0 in 
+sum_n 20"
+
 "let map = fun f -> fun l -> match l with | Nil () -> Nil () | Cons (hd, tl) -> Cons (f hd, map f tl)."
 
 A period following a let binding tells the repl to create the binding in the environment, but not to evaluate anything.
